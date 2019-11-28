@@ -4,19 +4,29 @@
       <div
         v-for="(field, indexY) in x"
         :key="indexY"
-        class="field"
-        :class="[field.type, field.type === 'building' ? buildingLifeClass(field) : '']"
         @click="addBuilding(indexX, indexY)"
       >
-        {{field.health}}
+        <BuildingBackground :field="field">
+          <component :is="field.type" :buildingData="field"></component>
+        </BuildingBackground>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import House from "@/components/Buildings/House.vue";
+import BuildingBackground from "@/components/Ui/BuildingBackground.vue";
+import { BUILDING_TYPES } from "./Buildings/constants";
+import buildingMethodsMixin from "../mixins/buildingMethodsMixin";
+
 export default {
   name: "Map",
+  components: {
+    House,
+    BuildingBackground
+  },
+  mixins: [buildingMethodsMixin],
   data() {
     return {
       mapSizeX: 15,
@@ -26,24 +36,16 @@ export default {
   },
   methods: {
     createMap() {
-      const gameMap = [];
-      for (let x = 0; x < this.mapSizeX; x++) {
-        gameMap[x] = [];
-        for (let y = 0; y < this.mapSizeY; y++) {
-          gameMap[x][y] = {
-            empty: true
-          };
-        }
-      }
-      return gameMap;
+      return Array(this.mapSizeX)
+        .fill(0)
+        .map(() => Array(this.mapSizeY).fill({ empty: true }));
     },
     addBuilding(x, y) {
-      console.log(x, y, this.gameMap[x]);
       const newLine = this.gameMap[x];
       const building = {
-        type: "building",
+        type: BUILDING_TYPES.HOUSE,
         health: 0,
-        maxHealth: 500,
+        maxHealth: 500
       };
 
       building.buildTimer = this.initiateBuilding(building);
@@ -51,32 +53,6 @@ export default {
       newLine[y] = building;
 
       this.$set(this.gameMap, x, [...newLine]);
-    },
-    initiateBuilding(building) {
-      building.timer = setInterval(() => {
-        building.health += 50;
-        if(building.health >= building.maxHealth) {
-          building.health = building.maxHealth;
-          clearInterval(building.timer);
-        }
-      }, 1000);
-      return building;
-    },
-    buildingLifeClass ({health, maxHealth}) {
-      console.log({health, maxHealth});
-      let result = 'good';
-      switch (true) {
-        case health < (maxHealth * 0.8): {
-          result = 'damaged';
-          break;
-        }
-        case health === 0: {
-          result = 'destroyed';
-          break;
-        }
-        default: result = 'good'
-      }
-      return result;
     }
   },
   created() {
@@ -86,37 +62,12 @@ export default {
 </script>
 
 <style scoped lang="scss">
-$fieldSize: 50px;
-$mapSize: 90%;
-
-@mixin flexCenter() {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
+@import '../styles/mixins.scss';
+@import '../styles/variables.scss';
 
 .map {
   @include flexCenter;
   width: $mapSize;
   height: $mapSize;
-}
-
-.field {
-  @include flexCenter;
-  width: $fieldSize;
-  height: $fieldSize;
-  border: 1px solid black;
-  &.building {
-    background-color: red;
-    &.good {
-      background-color: green;
-    }
-    &.damaged {
-      background-color: yellow;
-    }
-    &.destroyed {
-      background-color: red;
-    }
-  }
 }
 </style>
